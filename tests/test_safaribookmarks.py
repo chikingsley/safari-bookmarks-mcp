@@ -1,15 +1,15 @@
+import hashlib
 from contextlib import nullcontext
 from datetime import datetime
-from hashlib import sha1
 from io import BytesIO
 from pathlib import Path
-import plistlib
+
 import pytest
 
 from safaribookmarks.models import (
     WebBookmarkType,
-    WebBookmarkTypeList,
     WebBookmarkTypeLeaf,
+    WebBookmarkTypeList,
     WebBookmarkTypeProxy,
 )
 from safaribookmarks.safaribookmarks import (
@@ -17,12 +17,8 @@ from safaribookmarks.safaribookmarks import (
     SafariBookmarks,
 )
 
-BOOKMARKS_BINARY_PATH = Path(__file__).parent.joinpath(
-    "support", "fixtures", "Bookmarks.bin"
-)
-BOOKMARKS_XML_PATH = Path(__file__).parent.joinpath(
-    "support", "fixtures", "Bookmarks.xml"
-)
+BOOKMARKS_BINARY_PATH = Path(__file__).parent.joinpath("support", "fixtures", "Bookmarks.bin")
+BOOKMARKS_XML_PATH = Path(__file__).parent.joinpath("support", "fixtures", "Bookmarks.xml")
 
 
 @pytest.fixture
@@ -131,9 +127,9 @@ class TestSafariBookmarkItem:
             ("list_item", 1, TypeError("int")),
             ("list_item", "Unknown", KeyError("Unknown")),
             ("list_item", "Example Leaf", "leaf_item"),
-            ("list_item", tuple(["Example Leaf"]), "leaf_item"),
+            ("list_item", ("Example Leaf",), "leaf_item"),
             ("list_item", "40ebd9a6-c962-4a05-b382-c796c5127732", "leaf_item"),
-            ("list_item", tuple(["40ebd9a6-c962-4a05-b382-c796c5127732"]), "leaf_item"),
+            ("list_item", ("40ebd9a6-c962-4a05-b382-c796c5127732",), "leaf_item"),
         ],
     )
     def test_getitem(self, request, fixture, key, expected):
@@ -635,7 +631,7 @@ class TestSafariBookmarks:
         with BytesIO() as buf:
             subject.dump(buf, binary=binary)
             buf.seek(0)
-            assert digest == sha1(buf.read()).hexdigest()
+            assert digest == hashlib.sha1(buf.read()).hexdigest()
 
     @pytest.mark.parametrize(
         ("binary"),
@@ -652,7 +648,6 @@ class TestSafariBookmarks:
 def maybe_raises(error, **kwargs):
     if isinstance(error, BaseException):
         return pytest.raises(type(error), match=str(error), **kwargs)
-    elif error == type and issubclass(error, BaseException):
+    if isinstance(error, type) and issubclass(error, BaseException):
         return pytest.raises(error, **kwargs)
-    else:
-        return nullcontext()
+    return nullcontext()

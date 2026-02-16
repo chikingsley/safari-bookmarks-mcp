@@ -1,39 +1,57 @@
 [project]
-name = "safari-bookmarks-cli"
+name = "safari-bookmarks-mcp"
 authors = [
   { name="Marty", email="marty@zalega.me" },
 ]
-description = "A cli to manage bookmarks in the Safari web browser."
+description = "A CLI and MCP server to manage bookmarks in the Safari web browser."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
 ]
 dependencies = [
-  "pydantic~=2.1",
+  "pydantic>=2.12.5",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
 tests = [
-  "pytest~=8.2",
-  "flake8~=7.1",
+  "pytest>=9.0.2",
+  "ruff>=0.15.1",
+  "ty>=0.0.17",
+  "mcp>=1.12.0",
+]
+mcp = [
+  "mcp>=1.12.0",
 ]
 build = [
   "hatch",
+  "hatchling>=1.28.0",
 ]
 
+[dependency-groups]
+dev = [
+  "pytest>=9.0.2",
+  "ruff>=0.15.1",
+  "ty>=0.0.17",
+  "mcp>=1.12.0",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
 [project.urls]
-"Homepage" = "https://github.com/evilmarty/safari-bookmarks-cli"
-"Bug Tracker" = "https://github.com/evilmarty/safari-bookmarks-cli/issues"
+"Homepage" = "https://github.com/evilmarty/safari-bookmarks-mcp"
+"Bug Tracker" = "https://github.com/evilmarty/safari-bookmarks-mcp/issues"
 
 [project.scripts]
-safari-bookmarks = "safaribookmarks.main:main"
+safari-bookmarks = "safaribookmarks.cli.main:main"
+safari-bookmarks-mcp = "safaribookmarks.mcp.server:main"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.28.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build]
@@ -53,6 +71,66 @@ source = "code"
 expression = "VERSION"
 path = "src/safaribookmarks/version.py"
 search-paths = ["src"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+extend-select = [
+    "F",    # Pyflakes rules
+    "W",    # PyCodeStyle warnings
+    "E",    # PyCodeStyle errors
+    "I",    # Sort imports properly
+    "B",    # flake8-bugbear
+    "UP",   # Warn if certain things can be changed due to newer Python versions
+    "C4",   # Catch incorrect use of comprehensions, dict, list, etc
+    "FA",   # Enforce from __future__ import annotations
+    "ISC",  # Good use of string concatenation
+    "ICN",  # Use common import conventions
+    "RET",  # Good return practices
+    "SIM",  # Common simplification rules
+    "TID",  # Some good import practices
+    "TC",   # Enforce importing certain types in a TYPE_CHECKING block
+    "PTH",  # Use pathlib instead of os.path
+    "TD",   # Be diligent with TODO comments
+    "S",    # flake8-bandit security checks
+    "PERF", # Performance anti-patterns
+    "PL",   # Pylint rules
+    "RUF",  # Ruff-specific rules
+    "ERA",  # Detect commented-out code
+    "FBT",  # Boolean trap detection
+]
+ignore = [
+    "E501",    # line too long (handled by formatter)
+    "B008",    # function calls in argument defaults (existing CLI API patterns)
+    "PLR2004", # magic value comparisons
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",
+    "S108",
+    "FBT",
+    "PLR0913",
+    "PLC0415",
+    "TC",
+    "S324",
+]
+"src/**/cli/cli.py" = ["FBT", "PLR0913"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ty.src]
+exclude = ["demo.py"]
+
+[tool.ty.rules]
+# Pydantic model aliases and fixture dictionaries intentionally include many external keys
+unknown-argument = "ignore"
+
+[tool.ty.environment]
+python-version = "3.12"
 
 [tool.pytest.ini_options]
 addopts = [

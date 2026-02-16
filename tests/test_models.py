@@ -1,10 +1,10 @@
 import pytest
 
 from safaribookmarks.models import (
-    WebBookmarkTypeList,
-    WebBookmarkTypeLeaf,
-    WebBookmarkTypeProxy,
     WebBookmarkType,
+    WebBookmarkTypeLeaf,
+    WebBookmarkTypeList,
+    WebBookmarkTypeProxy,
 )
 
 
@@ -49,7 +49,7 @@ class TestWebBookmarkTypeList:
         assert new_child == subject.children[0]
 
     def test_remove(self, subject: WebBookmarkTypeList):
-        child, *_ = subject.children.copy()
+        child = subject.children[0]
         subject.remove(child)
         assert child not in subject.children
 

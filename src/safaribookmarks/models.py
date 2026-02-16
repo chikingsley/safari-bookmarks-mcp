@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
 import uuid
 from typing import Annotated, Literal, Union
+
+from pydantic import BaseModel, ConfigDict, Field
 
 ChildrenType = Annotated[
     Union["WebBookmarkTypeProxy", "WebBookmarkTypeLeaf", "WebBookmarkTypeList"],
@@ -8,12 +9,16 @@ ChildrenType = Annotated[
 ]
 
 
-class CloudKitSync(BaseModel, populate_by_name=True):
+class CloudKitSync(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     cloud_kit_device_identifier: str = Field(alias="CloudKitDeviceIdentifier")
     cloud_kit_migration_state: int = Field(alias="CloudKitMigrationState")
 
 
-class WebBookmarkType(BaseModel, extra="allow"):
+class WebBookmarkType(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     web_bookmark_uuid: str = Field(
         alias="WebBookmarkUUID",
         default_factory=lambda: str(uuid.uuid4()),

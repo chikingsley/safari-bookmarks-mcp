@@ -1,11 +1,12 @@
-from io import UnsupportedOperation
+import builtins
 import os
-from typing import IO, List, Optional
-from .safaribookmarks import SafariBookmarks, SafariBookmarkItem
+from io import UnsupportedOperation
+from pathlib import Path
+from typing import IO
 
-DEFAULT_LIST_FORMAT = (
-    "{grey}{icon}{reset} {title: <50} {dark_grey}{id: <38}{cyan}{url}{reset}"
-)
+from safaribookmarks.safaribookmarks import SafariBookmarkItem, SafariBookmarks
+
+DEFAULT_LIST_FORMAT = "{grey}{icon}{reset} {title: <50} {dark_grey}{id: <38}{cyan}{url}{reset}"
 SIMPLE_FORMAT = "{grey}{icon}{reset} {title: <50} {cyan}{url}{reset}"
 ICON_FIRST_LEAF = "┌"
 ICON_MIDDLE_LEAF = "├"
@@ -43,8 +44,8 @@ class CLI:
         self.colors = generate_colors(out)
 
     @property
-    def path(self) -> str:
-        return str(self.bookmarks.path)
+    def path(self) -> Path | None:
+        return self.bookmarks.path
 
     def run(self, command: str, **kwargs) -> None:
         if command is None:
@@ -54,7 +55,7 @@ class CLI:
             raise ValueError(f"Invalid command: {command}")
         func(**kwargs)
 
-    def _get_or_walk(self, path: List[str]) -> Optional[SafariBookmarkItem]:
+    def _get_or_walk(self, path: builtins.list[str]) -> SafariBookmarkItem | None:
         if len(path) == 1:
             result = self.bookmarks.get(path[0])
             if result is not None:
@@ -64,9 +65,7 @@ class CLI:
     def _save(self) -> None:
         self.bookmarks.save()
 
-    def _render_item(
-        self, item: SafariBookmarkItem, format: str, depth: int = 0, icon: str = ""
-    ):
+    def _render_item(self, item: SafariBookmarkItem, format: str, depth: int = 0, icon: str = ""):
         self.output.write(
             f"{format}\n".format(
                 **self.colors,
@@ -83,7 +82,7 @@ class CLI:
 
     def _render_children(self, item: SafariBookmarkItem, format: str, depth: int = 0):
         last_index = len(item) - 1
-        for index, child in enumerate(iter(item)):
+        for index, child in enumerate(item):
             icon = ICON_LAST_LEAF if index == last_index else ICON_MIDDLE_LEAF
             if depth == 0 and index == 0:
                 icon = ICON_FIRST_LEAF
@@ -109,11 +108,12 @@ class CLI:
 
     def list(
         self,
-        path: List[str] = [],
-        format: Optional[str] = None,
+        path: builtins.list[str] | None = None,
+        format: str | None = None,
         simple_format=False,
         json=False,
     ):
+        path = path or []
         target = self._get_or_walk(path)
         if target is None:
             raise ValueError("Target not found")
@@ -125,12 +125,13 @@ class CLI:
 
     def add(
         self,
-        title: Optional[str],
-        uuid: Optional[str] = None,
-        url: Optional[str] = None,
-        path: List[str] = [],
+        title: str | None,
+        uuid: str | None = None,
+        url: str | None = None,
+        path: builtins.list[str] | None = None,
         list=False,
     ):
+        path = path or []
         target = self._get_or_walk(path)
         if target is None or not target.is_folder:
             raise ValueError("Invalid destination")
@@ -146,7 +147,7 @@ class CLI:
             target.add_bookmark(url=url, id=uuid, title=title)
         self._save()
 
-    def remove(self, path: List[str]):
+    def remove(self, path: builtins.list[str]):
         target = self._get_or_walk(path)
         if target is None:
             raise ValueError("Target not found")
@@ -154,7 +155,8 @@ class CLI:
             parent.remove(target)
         self._save()
 
-    def move(self, path: List[str], to: List[str] = []):
+    def move(self, path: builtins.list[str], to: builtins.list[str] | None = None):
+        to = to or []
         target = self._get_or_walk(path)
         if target is None:
             raise ValueError("Target not found")
@@ -168,9 +170,9 @@ class CLI:
 
     def edit(
         self,
-        path: List[str],
-        title: Optional[str] = None,
-        url: Optional[str] = None,
+        path: builtins.list[str],
+        title: str | None = None,
+        url: str | None = None,
     ):
         target = self._get_or_walk(path)
         if target is None:
@@ -178,14 +180,12 @@ class CLI:
         if title is not None:
             target.title = title
         if url is not None:
-            target.url = url
-            if target.is_bookmark:
-                target.url = url
-            else:
+            if not target.is_bookmark:
                 raise ValueError("Cannot update target url")
+            target.url = url
         self._save()
 
-    def empty(self, path: List[str]):
+    def empty(self, path: builtins.list[str]):
         target = self._get_or_walk(path)
         if target is None:
             raise ValueError("Target not found")
@@ -197,22 +197,20 @@ class CLI:
 
 def generate_colors(output: IO) -> dict[str, str]:
     if supports_colors(output):
-        return {name: "\033[%dm" % code for name, code in COLORS.items()}
-    else:
-        return {name: "" for name in COLORS.keys()}
+        return {name: f"\033[{code}m" for name, code in COLORS.items()}
+    return dict.fromkeys(COLORS.keys(), "")
 
 
 def supports_colors(tty: IO) -> bool:
-    if "ANSI_COLORS_DISABLED" in os.environ:
-        return False
-    if "NO_COLOR" in os.environ:
+    if (
+        "ANSI_COLORS_DISABLED" in os.environ
+        or "NO_COLOR" in os.environ
+        or os.environ.get("TERM") == "dumb"
+        or not hasattr(tty, "fileno")
+    ):
         return False
     if "FORCE_COLOR" in os.environ:
         return True
-    if os.environ.get("TERM") == "dumb":
-        return False
-    if not hasattr(tty, "fileno"):
-        return False
     try:
         return os.isatty(tty.fileno())
     except UnsupportedOperation:

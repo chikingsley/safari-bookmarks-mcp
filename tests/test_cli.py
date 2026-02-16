@@ -1,9 +1,11 @@
 import plistlib
+from collections.abc import Generator
 from io import StringIO
-import pytest
 from pathlib import Path
 from shutil import copyfile
-from typing import Any, Generator, List, Optional
+from typing import Any
+
+import pytest
 
 from safaribookmarks.cli import CLI
 
@@ -12,16 +14,14 @@ BOOKMARKS_BINARY_PATH = FIXTURE_PATH.joinpath("Bookmarks.bin")
 
 
 class TestCLI:
-    def read_plist(self, path):
-        with open(path, "rb") as fp:
+    def read_plist(self, path: Path) -> Any:
+        with path.open("rb") as fp:
             return plistlib.load(fp)
 
     def assert_plists(self, actual, expected):
         actual_content = self.read_plist(actual)
         expected_content = self.read_plist(expected)
-        assert (
-            actual_content == expected_content
-        ), f"{actual_content} != {expected_content}"
+        assert actual_content == expected_content, f"{actual_content} != {expected_content}"
 
     @pytest.fixture()
     def bookmarks_path(self, tmp_path: Path) -> Generator[Path, Any, Any]:
@@ -114,7 +114,7 @@ class TestCLI:
         cli: CLI,
         json: bool,
         format: str,
-        path: List[str],
+        path: list[str],
         fixture_path: Path,
     ):
         with fixture_path.open("r") as file:
@@ -175,23 +175,19 @@ class TestCLI:
             ),
         ],
     )
-    @pytest.mark.parametrize(
-        "path", [["20ABDC16-B491-47F4-B252-2A3065CFB895"], ["BookmarksMenu"]]
-    )
+    @pytest.mark.parametrize("path", [["20ABDC16-B491-47F4-B252-2A3065CFB895"], ["BookmarksMenu"]])
     def test_add__valid(
         self,
         cli: CLI,
-        uuid: Optional[str],
+        uuid: str | None,
         list: bool,
-        title: Optional[str],
-        url: Optional[str],
-        path: List[str],
+        title: str | None,
+        url: str | None,
+        path: list[str],
         fixture_path: Path,
         monkeypatch,
     ):
-        with (
-            monkeypatch.context() as m,
-        ):
+        with monkeypatch.context() as m:
             m.setattr("uuid.uuid4", lambda: "8693E85C-83FC-4F42-AFB2-40B9CFACAAA0")
             cli.add(uuid=uuid, list=list, title=title, url=url, path=path)
             self.assert_plists(cli.path, fixture_path)
@@ -250,10 +246,10 @@ class TestCLI:
         self,
         cli: CLI,
         list: bool,
-        uuid: Optional[str],
-        title: Optional[str],
-        url: Optional[str],
-        path: List[str],
+        uuid: str | None,
+        title: str | None,
+        url: str | None,
+        path: list[str],
         error: str,
     ):
         with pytest.raises(ValueError, match=error):
@@ -284,7 +280,7 @@ class TestCLI:
             ),
         ],
     )
-    def test_remove__valid(self, cli: CLI, path: List[str], fixture_path: Path):
+    def test_remove__valid(self, cli: CLI, path: list[str], fixture_path: Path):
         cli.remove(path=path)
         self.assert_plists(cli.path, fixture_path)
 
@@ -303,7 +299,7 @@ class TestCLI:
             ),
         ],
     )
-    def test_remove__invalid(self, cli: CLI, path: List[str], error: str):
+    def test_remove__invalid(self, cli: CLI, path: list[str], error: str):
         with pytest.raises(ValueError, match=error):
             cli.remove(path=path)
 
@@ -336,9 +332,7 @@ class TestCLI:
             ),
         ],
     )
-    def test_move__valid(
-        self, cli: CLI, path: List[str], to: List[str], fixture_path: Path
-    ):
+    def test_move__valid(self, cli: CLI, path: list[str], to: list[str], fixture_path: Path):
         cli.move(path=path, to=to)
         self.assert_plists(cli.path, fixture_path)
 
@@ -377,7 +371,7 @@ class TestCLI:
             ),
         ],
     )
-    def test_move__invalid(self, cli: CLI, path: List[str], to: List[str], error: str):
+    def test_move__invalid(self, cli: CLI, path: list[str], to: list[str], error: str):
         with pytest.raises(ValueError, match=error):
             cli.move(path=path, to=to)
 
@@ -417,9 +411,9 @@ class TestCLI:
     def test_edit__valid(
         self,
         cli: CLI,
-        path: List[str],
-        title: Optional[str],
-        url: Optional[str],
+        path: list[str],
+        title: str | None,
+        url: str | None,
         fixture_path: Path,
     ):
         cli.edit(path=path, title=title, url=url)
@@ -454,9 +448,9 @@ class TestCLI:
     def test_edit__invalid(
         self,
         cli: CLI,
-        path: List[str],
-        title: Optional[str],
-        url: Optional[str],
+        path: list[str],
+        title: str | None,
+        url: str | None,
         error: str,
     ):
         with pytest.raises(ValueError, match=error):
@@ -465,9 +459,7 @@ class TestCLI:
     @pytest.mark.parametrize(
         ("path", "fixture_path"),
         [
-            pytest.param(
-                ["BookmarksBar"], FIXTURE_PATH.joinpath("empty.plist"), id="list-title"
-            ),
+            pytest.param(["BookmarksBar"], FIXTURE_PATH.joinpath("empty.plist"), id="list-title"),
             pytest.param(
                 ["3B5180DB-831D-4F1A-AE4A-6482D28D66D5"],
                 FIXTURE_PATH.joinpath("empty.plist"),
@@ -475,7 +467,7 @@ class TestCLI:
             ),
         ],
     )
-    def test_empty__valid(self, cli: CLI, path: List[str], fixture_path: Path):
+    def test_empty__valid(self, cli: CLI, path: list[str], fixture_path: Path):
         cli.empty(path=path)
         self.assert_plists(cli.path, fixture_path)
 
@@ -499,6 +491,6 @@ class TestCLI:
             ),
         ],
     )
-    def test_empty__invalid(self, cli: CLI, path: List[str], error: str):
+    def test_empty__invalid(self, cli: CLI, path: list[str], error: str):
         with pytest.raises(ValueError, match=error):
             cli.empty(path=path)

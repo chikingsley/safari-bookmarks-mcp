@@ -1,5 +1,5 @@
-from .safaribookmarks import SafariBookmarks, SafariBookmarkItem
+from .safaribookmarks import SafariBookmarkItem, SafariBookmarks
 
 open = SafariBookmarks.open
 
-__all__ = ["SafariBookmarks", "SafariBookmarkItem", "open"]
+__all__ = ["SafariBookmarkItem", "SafariBookmarks", "open"]
