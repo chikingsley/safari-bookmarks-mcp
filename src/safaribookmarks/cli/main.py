@@ -109,7 +109,7 @@ def parse_args() -> Namespace:
         description="Move a bookmark or folder.",
     )
     parser_move.add_argument(
-        "target", nargs="+", help="The UUID or path of the bookmark or folder to move."
+        "path", nargs="+", help="The UUID or path of the bookmark or folder to move."
     )
     parser_move.add_argument(
         "--to",

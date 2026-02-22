@@ -1,6 +1,9 @@
+import base64
+import json as json_module
 import os
 import plistlib
 from collections.abc import Iterable
+from datetime import datetime
 from pathlib import Path
 from typing import IO
 
@@ -33,6 +36,9 @@ class SafariBookmarkItem:
 
     def __len__(self) -> int:
         return len(self.children)
+
+    def __bool__(self) -> bool:
+        return True
 
     def __hash__(self) -> int:
         return hash(self._node)
@@ -179,7 +185,18 @@ class SafariBookmarkItem:
         return item
 
     def json(self) -> str:
-        return self._node.model_dump_json(by_alias=True)
+        data = self._node.model_dump(by_alias=True)
+        return json_module.dumps(
+            data, default=self._json_default, separators=(",", ":"), ensure_ascii=False
+        )
+
+    @staticmethod
+    def _json_default(obj: object) -> str:
+        if isinstance(obj, bytes):
+            return base64.b64encode(obj).decode("ascii")
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 
 class SafariBookmarks(SafariBookmarkItem):

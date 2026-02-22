@@ -1,3 +1,4 @@
+import inspect
 import plistlib
 from collections.abc import Generator
 from io import StringIO
@@ -8,6 +9,7 @@ from typing import Any
 import pytest
 
 from safaribookmarks.cli import CLI
+from safaribookmarks.cli.main import parse_args
 
 FIXTURE_PATH = Path(__file__).parent.joinpath("support", "fixtures")
 BOOKMARKS_BINARY_PATH = FIXTURE_PATH.joinpath("Bookmarks.bin")
@@ -494,3 +496,30 @@ class TestCLI:
     def test_empty__invalid(self, cli: CLI, path: list[str], error: str):
         with pytest.raises(ValueError, match=error):
             cli.empty(path=path)
+
+
+class TestParseArgs:
+    """Tests that argparse produces kwargs compatible with CLI methods."""
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["move", "BookmarksBar", "Safari", "--to", "BookmarksMenu"],
+            ["move", "some-uuid", "--to", "other-uuid"],
+            ["mv", "BookmarksBar", "--to", "BookmarksMenu"],
+        ],
+    )
+    def test_move_args_match_method_signature(self, argv, monkeypatch):
+        """parse_args for 'move' must produce kwargs that CLI.move() accepts.
+
+        This is a regression test: argparse previously named the positional
+        arg 'target' while CLI.move() expected 'path', causing a TypeError.
+        """
+        monkeypatch.setattr("sys.argv", ["safari-bookmarks", *argv])
+        args = parse_args().__dict__
+        args.pop("file")
+        command = args.pop("command")
+        assert command == "move"
+        sig = inspect.signature(CLI.move)
+        # This will raise TypeError if the kwarg names don't match
+        sig.bind(None, **args)  # None for self

@@ -104,6 +104,20 @@ class TestSafariBookmarkItem:
         assert actual == expected
 
     @pytest.mark.parametrize(
+        "fixture",
+        [
+            "type_item",
+            "leaf_item",
+            "list_item",
+            "proxy_item",
+        ],
+    )
+    def test_bool(self, request, fixture):
+        """All bookmark items should be truthy, regardless of children count."""
+        subject = request.getfixturevalue(fixture)
+        assert bool(subject) is True
+
+    @pytest.mark.parametrize(
         ("fixture"),
         [
             "type_item",
@@ -485,6 +499,44 @@ class TestSafariBookmarkItem:
             assert actual == expected
             assert actual in subject
             assert actual.parent == subject
+
+
+    def test_bool_empty_folder(self):
+        """An empty folder (len==0) must still be truthy."""
+        node = WebBookmarkTypeList(Title="Empty", Children=[])
+        item = SafariBookmarkItem(node)
+        assert len(item) == 0
+        assert bool(item) is True
+
+    def test_bool_leaf_no_children(self):
+        """A leaf bookmark (len==0) must still be truthy."""
+        node = WebBookmarkTypeLeaf(URLString="http://example.com", URIDictionary={"title": "Test"})
+        item = SafariBookmarkItem(node)
+        assert len(item) == 0
+        assert bool(item) is True
+
+    def test_json(self, list_item):
+        import json
+
+        result = list_item.json()
+        data = json.loads(result)
+        assert data["Title"] == "Example List"
+        assert data["WebBookmarkType"] == "WebBookmarkTypeList"
+        assert len(data["Children"]) == 1
+
+    def test_json_with_bytes_in_extra_fields(self):
+        """JSON serialization should handle bytes in extra fields (e.g. Sync.Data)."""
+        import json
+
+        node = WebBookmarkTypeLeaf(
+            URLString="http://example.com",
+            URIDictionary={"title": "Test"},
+            Sync={"Data": b"\x00\x01\x02\xff"},
+        )
+        item = SafariBookmarkItem(node)
+        result = item.json()
+        data = json.loads(result)
+        assert data["Sync"]["Data"] == "AAEC/w=="  # base64 of b"\x00\x01\x02\xff"
 
 
 class TestSafariBookmarks:
