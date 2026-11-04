@@ -109,7 +109,12 @@ class SafariBookmarkItem:
 
     @property
     def title(self) -> str:
-        return getattr(self._node, "title", "")
+        if isinstance(
+            self._node,
+            (WebBookmarkTypeProxy, WebBookmarkTypeList, WebBookmarkTypeLeaf),
+        ):
+            return self._node.title
+        return ""
 
     @title.setter
     def title(self, title: str) -> None:
@@ -121,7 +126,9 @@ class SafariBookmarkItem:
 
     @property
     def url(self) -> str:
-        return getattr(self._node, "url_string", "")
+        if isinstance(self._node, WebBookmarkTypeLeaf):
+            return self._node.url_string
+        return ""
 
     @url.setter
     def url(self, url: str) -> None:
@@ -180,7 +187,8 @@ class SafariBookmarkItem:
             raise RuntimeError("Invalid item")
         if item in self:
             return
-        if parent := item.parent:
+        parent = item.parent
+        if parent is not None:
             parent.remove(item)
         getattr(self._node, "children", []).append(item._node)
         item._parent = self
@@ -224,8 +232,8 @@ class SafariBookmarks(SafariBookmarkItem):
 
     def __init__(self, root: WebBookmarkTypeList) -> None:
         super().__init__(node=root)
-        self._path = None
-        self._binary = None
+        self._path: Path | None = None
+        self._binary: bool | None = None
 
     def __enter__(self) -> Self:
         return self

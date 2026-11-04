@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
 from shutil import copyfile
-from typing import BinaryIO, cast
+from typing import Any, cast
 
 import pytest
 
@@ -205,10 +205,10 @@ def test_load_and_dump_require_binary_streams(tmp_path: Path) -> None:
         pytest.raises(OSError, match="Must be in binary mode"),
         BOOKMARKS_BINARY_PATH.open("r") as file,
     ):
-        SafariBookmarks.load(cast(BinaryIO, file))
+        SafariBookmarks.load(cast(Any, file))
 
     with (
         pytest.raises(OSError, match="Must be in binary mode"),
         tmp_path.joinpath("Bookmarks.plist").open("w") as file,
     ):
-        SafariBookmarks(WebBookmarkTypeList(Title="")).dump(cast(BinaryIO, file))
+        SafariBookmarks(WebBookmarkTypeList(Title="")).dump(cast(Any, file))

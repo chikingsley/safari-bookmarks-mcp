@@ -1,5 +1,5 @@
 from .bookmarks import SafariBookmarkItem, SafariBookmarks
 
-open = SafariBookmarks.open  # noqa: A001,RUF067
+open = SafariBookmarks.open  # ruff: ignore[builtin-variable-shadowing, non-empty-init-module]
 
 __all__ = ["SafariBookmarkItem", "SafariBookmarks", "open"]

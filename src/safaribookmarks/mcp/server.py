@@ -1,20 +1,30 @@
 from argparse import ArgumentParser
+from collections.abc import Callable
+from functools import wraps
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 from uuid import UUID
 
+from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel, ValidationError, field_validator, model_validator
 
 from .service import SafariBookmarksService
 
-FastMCP: Any | None = None
-try:
-    from mcp.server.fastmcp import FastMCP as _FastMCP
-except ModuleNotFoundError:  # pragma: no cover
-    pass
-else:
-    FastMCP = _FastMCP
+
+# The SDK replaces any exception other than `ToolError` with a generic message, which would
+# hide why a write was refused or an input rejected. Anything not listed here is a crash and
+# stays generic.
+def _report_failures[**P, R](tool: Callable[P, R]) -> Callable[P, R]:
+    @wraps(tool)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        try:
+            return tool(*args, **kwargs)
+        except (ValueError, RuntimeError, OSError) as exc:
+            raise ToolError(str(exc)) from exc
+
+    return wrapper
 
 
 def _build_service(path: str) -> SafariBookmarksService:
@@ -27,7 +37,7 @@ def _normalize_uuid(value: str | None) -> str | None:
     return str(UUID(value)).upper()
 
 
-def _parse_payload(model: type[Any], payload: dict[str, Any]) -> Any:
+def _parse_payload[RequestT: BaseModel](model: type[RequestT], payload: dict[str, Any]) -> RequestT:
     try:
         return model.model_validate(payload)
     except ValidationError as exc:
@@ -70,7 +80,7 @@ def _result_payload(
     changed_count: int | None = None,
 ) -> dict[str, Any]:
     if changed_count is None:
-        if isinstance(result, list):  # noqa: SIM108
+        if isinstance(result, list):  # ruff: ignore[if-else-block-instead-of-if-exp]
             changed_count = len(result)
         else:
             changed_count = 0 if result is None else 1
@@ -200,12 +210,9 @@ def build_server(
     *,
     readonly: bool = False,
     confirm_write: bool = False,
-) -> Any:
-    if FastMCP is None:  # pragma: no cover
-        raise RuntimeError("The 'mcp' package is required to run the MCP server")
-
+) -> MCPServer:
     service = _build_service(path)
-    mcp = FastMCP("safari-bookmarks")
+    mcp = MCPServer("safari-bookmarks")
 
     def _require_write_permission(*, dry_run: bool) -> None:
         if dry_run:
@@ -216,6 +223,7 @@ def build_server(
             raise ValueError("Writes are disabled. Use --confirm-write or pass dry_run=True.")
 
     @mcp.tool()
+    @_report_failures
     def list_bookmarks(path: list[str] | None = None, *, recursive: bool = False) -> dict[str, Any]:
         request = _parse_payload(_ListBookmarksRequest, {"path": path, "recursive": recursive})
         result = service.list_bookmarks(path=request.path, recursive=request.recursive)
@@ -228,6 +236,7 @@ def build_server(
         )
 
     @mcp.tool()
+    @_report_failures
     def snapshot(path: list[str] | None = None, *, recursive: bool = True) -> dict[str, Any]:
         request = _parse_payload(_SnapshotRequest, {"path": path, "recursive": recursive})
         result = service.snapshot(path=request.path, recursive=request.recursive)
@@ -240,6 +249,7 @@ def build_server(
         )
 
     @mcp.tool()
+    @_report_failures
     def search_bookmarks(query: str, path: list[str] | None = None) -> dict[str, Any]:
         request = _parse_payload(_SearchBookmarksRequest, {"query": query, "path": path})
         result = service.search_bookmarks(query=request.query, path=request.path)
@@ -252,6 +262,7 @@ def build_server(
         )
 
     @mcp.tool()
+    @_report_failures
     def add_bookmark(
         path: list[str] | None,
         title: str | None,
@@ -287,6 +298,7 @@ def build_server(
         )
 
     @mcp.tool()
+    @_report_failures
     def add_folder(
         path: list[str] | None,
         title: str,
@@ -319,6 +331,7 @@ def build_server(
         )
 
     @mcp.tool()
+    @_report_failures
     def move_item(
         path: list[str],
         to: list[str],
@@ -344,6 +357,7 @@ def build_server(
         )
 
     @mcp.tool()
+    @_report_failures
     def remove_item(
         path: list[str],
         *,
@@ -361,6 +375,7 @@ def build_server(
         )
 
     @mcp.tool()
+    @_report_failures
     def edit_item(
         path: list[str],
         title: str | None = None,
@@ -393,6 +408,7 @@ def build_server(
         )
 
     @mcp.tool()
+    @_report_failures
     def empty_folder(
         path: list[str],
         *,

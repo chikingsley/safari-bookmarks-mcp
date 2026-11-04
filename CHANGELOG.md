@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Migrated to `mcp` 2.x (`MCPServer`) and bounded the dependency to `>=2.3.0,<3`. Released 0.6.2 allows `mcp` 2.x but imports the removed `mcp.server.fastmcp`, so a fresh install fails at startup.
+- Kept refusal and validation messages visible to MCP clients, which the 2.x SDK would otherwise replace with a generic error.
+- Replaced the `pip-audit` wrapper with `uv audit`, which also covers the `build` extra and `audit` group.
+- Made `just check` run the same lint, format and type checks as CI.
+
 ## 0.6.2
 
 - Fixed broken wheel: source package was missing from 0.6.1 due to incorrect hatchling include config.

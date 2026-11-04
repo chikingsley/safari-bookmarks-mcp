@@ -104,7 +104,7 @@ class SafariBookmarksService:
         target = self._resolve(path)
         if not target.is_folder:
             raise ValueError("Invalid destination")
-        if not title:
+        if title is None or not title:
             raise ValueError("Title is required")
         item = target.add_folder(title=title, bookmark_id=bookmark_id)
         result = self._serialize(item, recursive=True)
@@ -130,7 +130,7 @@ class SafariBookmarksService:
         *,
         dry_run: bool = False,
     ) -> dict[str, Any]:
-        if not to:
+        if to is None or len(to) == 0:
             raise ValueError("Missing destination")
         target = self._resolve(path)
         destination = self._resolve(to)

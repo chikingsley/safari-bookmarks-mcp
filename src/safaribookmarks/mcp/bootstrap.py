@@ -81,9 +81,9 @@ def _write_client_entry(
 
 
 def _normalize_clients(clients: tuple[str, ...] | list[str] | None) -> tuple[str, ...]:
-    if not clients:
+    if clients is None or len(clients) == 0:
         return SUPPORTED_CLIENTS
-    selected = [client.strip().lower() for client in clients if isinstance(client, str)]
+    selected = [client.strip().lower() for client in clients]
     unknown = [client for client in selected if client not in SUPPORTED_CLIENTS]
     if unknown:
         raise ValueError(

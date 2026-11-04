@@ -152,9 +152,9 @@ class CLI:
         if target is None or not target.is_folder:
             raise ValueError("Invalid destination")
         if folder:
-            if url:
+            if url is not None and url:
                 raise ValueError("URL is not supported by lists")
-            if not title:
+            if title is None or not title:
                 raise ValueError("Title is required")
             target.add_folder(title=title, bookmark_id=uuid)
         elif url is None:
@@ -167,7 +167,8 @@ class CLI:
         target = self._resolve(path)
         if target is None:
             raise ValueError("Target not found")
-        if parent := target.parent:
+        parent = target.parent
+        if parent is not None:
             parent.remove(target)
         self._save()
 

@@ -12,32 +12,31 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 dependencies = [
-  "pydantic>=2.13.4",
-  "mcp>=1.27.2",
+  "pydantic>=2.14.2",
+  "mcp>=2.3.0,<3",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
 build = [
-  "hatch>=1.17.0",
-  "hatchling>=1.30.1",
+  "hatch>=1.18.2",
+  "hatchling>=1.33.0",
 ]
 
 [dependency-groups]
 dev = [
-  "pytest>=9.1.0",
-  "ruff>=0.15.17",
-  "ty>=0.0.49",
-  "mcp>=1.27.2",
+  "pytest>=9.2.0",
+  "ruff>=0.17.3",
+  "ty>=0.0.97",
 ]
 audit = [
-  "pip-audit>=2.10.1",
-  "truststore>=0.10.4",
-  "zizmor>=1.25.2",
+  "zizmor>=1.32.0",
 ]
 
 [tool.uv]
 default-groups = ["dev"]
+# `uv audit` is the supply-chain gate, and setup-uv reads this to pick its uv version.
+required-version = ">=0.13.7"
 
 [project.urls]
 "Homepage" = "https://github.com/chikingsley/safari-bookmarks-mcp"
@@ -48,7 +47,7 @@ safari-bookmarks = "safaribookmarks.cli.main:main"
 safari-bookmarks-mcp = "safaribookmarks.mcp.server:main"
 
 [build-system]
-requires = ["hatchling>=1.30.1"]
+requires = ["hatchling>=1.33.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
@@ -71,39 +70,38 @@ line-length = 100
 preview = true
 select = ["ALL"]
 ignore = [
-    "CPY",     # no copyright header boilerplate in this project
-    "E501",    # line too long (handled by formatter)
-    "B008",    # function calls in argument defaults (existing CLI API patterns)
-    "COM812",  # conflicts with Ruff formatter
-    "D",       # no docstring requirement for this small CLI package
-    "EM",      # exception message constants add noise here
-    "PLR2004", # magic value comparisons
-    "TRY003",  # direct exception messages are clearer in this CLI
+    "CPY",                               # no copyright header boilerplate in this project
+    "line-too-long",                     # handled by the formatter
+    "function-call-in-default-argument", # existing CLI API patterns
+    "missing-trailing-comma",            # conflicts with the Ruff formatter
+    "D",                                 # no docstring requirement for this small CLI package
+    "EM",                                # exception message constants add noise here
+    "magic-value-comparison",            # literal comparisons are clear in this code
+    "raise-vanilla-args",                # direct exception messages are clearer in this CLI
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "src/safaribookmarks/bookmarks.py" = [
-    "PLR0904", # tree wrapper intentionally exposes list-like and domain operations
-    "SLF001",  # same-class tree mutations need direct child node/parent updates
+    "too-many-public-methods", # tree wrapper intentionally exposes list-like and domain operations
+    "private-member-access",   # same-class tree mutations need direct child node/parent updates
 ]
-"src/safaribookmarks/mcp/bootstrap.py" = ["PLR0914"]
+"src/safaribookmarks/mcp/bootstrap.py" = ["too-many-locals"]
 "src/safaribookmarks/mcp/server.py" = [
-    "A002",   # MCP schema uses the public field name `id`
-    "ANN401", # FastMCP tool registration is dynamically typed
-    "C901",
+    "builtin-argument-shadowing", # MCP schema uses the public field name `id`
+    "complex-structure",
 ]
-"tests/test_mcp_server.py" = ["ANN401"]
+"tests/test_mcp_server.py" = ["any-type"]
 "tests/**" = [
-    "S101",
-    "S108",
+    "assert",
+    "hardcoded-temp-file",
     "FBT",
-    "PLR6301",
-    "PLR0913",
-    "PLC0415",
+    "no-self-use",
+    "too-many-arguments",
+    "import-outside-top-level",
     "TC",
-    "S324",
+    "hashlib-insecure-hash-function",
 ]
-"src/**/cli/commands.py" = ["FBT", "PLR0913"]
+"src/**/cli/commands.py" = ["FBT", "too-many-arguments"]
 
 [tool.ruff.format]
 quote-style = "double"

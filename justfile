@@ -43,21 +43,22 @@ mcp-bootstrap-global:
 mcp-bootstrap-both:
   uv run safari-bookmarks bootstrap --client claude --client opencode --client gemini --client codex --scope both --write
 
-# Run Ruff checks.
+# Run Ruff lint and format checks over the whole repo, matching CI.
 lint:
-  uv run ruff check src tests
+  uv run --locked ruff check .
+  uv run --locked ruff format --check .
 
 # Run Ty checks.
 typecheck:
-  uv run ty check src tests
+  uv run --locked ty check
 
 # Run test suite.
 test:
-  uv run pytest
+  uv run --locked pytest
 
 # Audit locked Python dependencies for known vulnerabilities.
 audit-deps:
-  uv run --locked --group audit python scripts/audit_deps.py
+  uv audit --locked --preview-features audit-command
 
 # Audit GitHub Actions workflows for common supply-chain hazards.
 audit-actions:

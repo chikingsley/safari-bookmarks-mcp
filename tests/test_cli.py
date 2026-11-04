@@ -5,7 +5,7 @@ import plistlib
 from io import StringIO
 from pathlib import Path
 from shutil import copyfile
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
@@ -47,7 +47,7 @@ def reset_bookmarks(path: Path | None) -> Path:
 
 def test_run_rejects_missing_and_private_commands(cli: CLI) -> None:
     with pytest.raises(ValueError, match="No command specified"):
-        cli.run(cast(str, None))
+        cli.run(cast(Any, None))
     with pytest.raises(ValueError, match="Invalid command"):
         cli.run("_resolve")
 
